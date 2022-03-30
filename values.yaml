@@ -1,7 +1,5 @@
 global:
-  image: test
   replicas: 1
-  bootstrapServers: kafka-cp-kafka-headless:9092
   resources:
     requests:
       cpu: "0.25"
