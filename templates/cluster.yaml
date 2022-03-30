@@ -1,0 +1,91 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: {{ include "connect.fullname" . }}
+  labels: 
+{{ include "connect.labels" . | indent 4 }}
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  replicas: {{ .Values.global.replicas }}
+  # TODO: Move to helper to select correct cluster using value of env
+  bootstrapServers: {{ .Values.global.bootstrapServers }}
+  # TODO: Get the certificates from vault using value of env
+#   authentication: (4)
+#     type: tls
+#     certificateAndKey:
+#       certificate: source.crt
+#       key: source.key
+#       secretName: my-user-source
+#   tls:
+#     trustedCertificates:
+#       - secretName: my-cluster-cluster-cert
+#         certificate: ca.crt
+#       - secretName: my-cluster-cluster-cert
+#         certificate: ca2.crt
+
+  config:
+    group.id: {{ include "connect.fullname" . }}
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: true
+    value.converter.schemas.enable: true
+    offset.storage.topic: {{ include "connect.fullname" . }}-offsets
+    config.storage.topic: {{ include "connect.fullname" . }}-configs
+    status.storage.topic: {{ include "connect.fullname" . }}-status
+    config.storage.replication.factor: -1
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+  resources:
+    requests:
+      cpu: {{ .Values.global.resources.requests.cpu | quote }}
+      memory: {{ .Values.global.resources.requests.memory | quote }}
+    limits:
+      cpu: {{ .Values.global.resources.limits.cpu | quote }}
+      memory: {{ .Values.global.resources.limits.memory | quote }}
+  #TODO: Make it overridable
+  logging:
+    type: inline
+    loggers:
+      log4j.rootLogger: "INFO"
+  readinessProbe:
+    initialDelaySeconds: {{ .Values.global.readinessProbe.initialDelaySeconds }}
+    timeoutSeconds: {{ .Values.global.readinessProbe.timeoutSeconds }}
+  livenessProbe:
+    initialDelaySeconds: {{ .Values.global.livenessProbe.initialDelaySeconds }}
+    timeoutSeconds: {{ .Values.global.livenessProbe.timeoutSeconds }}
+  #TODO: Construct the prom exporter
+#   metricsConfig: (15)
+#     type: jmxPrometheusExporter
+#     valueFrom:
+#       configMapKeyRef:
+#         name: my-config-map
+#         key: my-key
+  #TODO: Use the global values
+  jvmOptions:
+    "-Xmx": "1g"
+    "-Xms": "1g"
+  image: {{ .Values.global.image }}
+
+#TODO: Use value injector to inject the connection info
+#   template: (19)
+#     pod:
+#       affinity:
+#         podAntiAffinity:
+#           requiredDuringSchedulingIgnoredDuringExecution:
+#             - labelSelector:
+#                 matchExpressions:
+#                   - key: application
+#                     operator: In
+#                     values:
+#                       - postgresql
+#                       - mongodb
+#               topologyKey: "kubernetes.io/hostname"
+#     connectContainer: (20)
+#       env:
+#         - name: JAEGER_SERVICE_NAME
+#           value: my-jaeger-service
+#         - name: JAEGER_AGENT_HOST
+#           value: jaeger-agent-name
+#         - name: JAEGER_AGENT_PORT
+#           value: "6831"
