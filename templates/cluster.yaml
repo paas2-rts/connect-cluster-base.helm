@@ -26,16 +26,16 @@ spec:
 
   config:
     group.id: {{ include "connect.fullname" . }}
-    key.converter: org.apache.kafka.connect.json.JsonConverter
-    value.converter: org.apache.kafka.connect.json.JsonConverter
-    key.converter.schemas.enable: true
-    value.converter.schemas.enable: true
+    #TODO: Make overridable
     offset.storage.topic: {{ include "connect.fullname" . }}-offsets
     config.storage.topic: {{ include "connect.fullname" . }}-configs
     status.storage.topic: {{ include "connect.fullname" . }}-status
     config.storage.replication.factor: -1
     offset.storage.replication.factor: -1
     status.storage.replication.factor: -1
+    {{- range $key, $value := .Values.global.config }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
   resources:
     requests:
       cpu: {{ .Values.global.resources.requests.cpu | quote }}
